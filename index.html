@@ -66,18 +66,28 @@ h2{font-size:14px;font-weight:600;color:var(--muted);margin:28px 0 8px}
 .bar i{display:block;height:100%;width:0;transition:width .4s}
 .kv{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
 .kv span{color:var(--muted)}
-.kv b{font-weight:600}
+.kv b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.kv small{color:var(--muted);font-weight:400}
+.src{font-size:13px;color:var(--muted);margin:-8px 0 16px;line-height:1.4}
+.mags{display:flex;gap:12px}
+.mag{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.mag i{width:10px;height:10px;border-radius:50%}
+.mag.empty{color:var(--warn)}
+.mag.empty i{background:none!important;border:2px solid currentColor}
+.note{font-size:14px;color:var(--muted);padding:16px 2px}
 .raw{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.8;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-variant-numeric:tabular-nums}
-.raw div{display:flex;justify-content:space-between}
+.raw div{display:grid;grid-template-columns:76px 1fr auto;gap:8px}
 .raw span:first-child{color:var(--muted)}
+.raw .v{text-align:right;min-width:3ch;padding:0 3px;border-radius:3px;transition:background .6s}
+.raw .v.chg{background:var(--line)}
 .btn{display:block;width:100%;padding:15px;border-radius:8px;background:var(--accent);color:var(--ink);font-weight:600;font-size:16px;margin-top:24px;text-align:center}
 .btn.ghost{background:none;border:1px solid var(--line);color:var(--text);margin-top:10px}
 
 /* Historie */
 .tablewrap{overflow-x:auto;margin:14px -18px 0;padding:0 18px}
 table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
-th{font-size:13px;font-weight:500;color:var(--muted);text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
-td{padding:12px 10px 12px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:13px;font-weight:500;color:var(--muted);text-align:left;padding:8px 12px 8px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 12px 12px 0;border-bottom:1px solid var(--line);white-space:nowrap}
 td.ok{color:var(--ok);font-weight:600}td.warn{color:var(--warn);font-weight:600}
 
 /* Einstellungen */
@@ -156,7 +166,7 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
       </button>
       <div class="rows">
         <button class="rowbtn" onclick="show('list')"><span class="t"><strong>Maschine manuell auswählen</strong><small>Zugang ohne QR-Code</small></span><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-        <button class="rowbtn" onclick="show('history')"><span class="t"><strong>Historie anzeigen</strong><small>Alte Sensordaten</small></span><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button class="rowbtn" onclick="show('history')"><span class="t"><strong>Historie anzeigen</strong><small>Vergangene Befüllungen</small></span><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
     </section>
 
@@ -168,13 +178,17 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
       <div class="mtitle" id="mName"></div>
       <div class="msub" id="mSub"></div>
       <div class="status"><span><i class="dot"></i>Server online</span><span>Synchronisiert <b id="sync">–</b></span></div>
+      <p class="src">Quelle: SPS → OPC UA → Gateway → Web-API (Soll-Konzept, Werte simuliert)</p>
 
       <h2>Ausgewertete Sensordaten</h2>
-      <div class="score"><span class="num" id="score">–</span><span class="pct">%</span><span class="lab" id="scoreLab"></span></div>
+      <div class="score"><span class="num" id="score">–</span><span class="pct">g netto</span><span class="lab" id="scoreLab"></span></div>
       <div class="bar"><i id="bar"></i></div>
-      <div class="kv"><span>Temperatur</span><b id="eTemp"></b></div>
-      <div class="kv"><span>Vibration</span><b id="eVib"></b></div>
-      <div class="kv"><span>Empfehlung</span><b id="eRec"></b></div>
+      <div class="kv"><span>Arbeitsschritt</span><b id="eStep"></b></div>
+      <div class="kv"><span>Auftrag (RFID)</span><b id="eOrder"></b></div>
+      <div class="kv"><span>Tara</span><b id="eTara"></b></div>
+      <div class="kv"><span>Brutto</span><b id="eBrutto"></b></div>
+      <div class="kv"><span>Netto</span><b id="eNetto"></b></div>
+      <div class="kv"><span>Kugelmagazine</span><span class="mags" id="eMags"></span></div>
 
       <h2>Rohe Sensordaten</h2>
       <div class="raw" id="raw"></div>
@@ -185,10 +199,10 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
 
     <!-- Historie -->
     <section class="screen" id="history">
-      <select id="histFilter" onchange="renderHist()" aria-label="Maschine filtern"></select>
+      <select id="histFilter" onchange="renderHist()" aria-label="Befüllungen filtern"><option value="">Alle Befüllungen</option><option value="warn">Nur Abweichungen</option></select>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Zeitpunkt</th><th>Maschine</th><th>Temp. °C</th><th>Vib. mm/s</th><th>Status</th></tr></thead>
+          <thead><tr><th>Zeit</th><th>Auftrag</th><th>Netto g</th><th>Status</th><th>Kugeln r/g/b</th><th>Tara g</th><th>Brutto g</th></tr></thead>
           <tbody id="hist"></tbody>
         </table>
       </div>
@@ -199,7 +213,7 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
       <h2 style="margin-top:0">Darstellung</h2>
       <div class="seg"><button data-t="light" onclick="setTheme('light')">Hell</button><button data-t="dark" onclick="setTheme('dark')">Dunkel</button></div>
       <h2>Fehler an Ticketsystem melden</h2>
-      <label class="f" for="repMachine">Maschine</label>
+      <label class="f" for="repMachine">Bauteil an der Station Befüllen</label>
       <select id="repMachine"></select>
       <label class="f" for="repText">Beschreibung</label>
       <textarea id="repText" placeholder="Was ist passiert?"></textarea>
@@ -222,7 +236,7 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
   <div class="viewfinder"><svg class="corners" viewBox="0 0 100 100"><path d="M2 22V2h20M78 2h20v20M98 78v20H78M22 98H2V78"/></svg></div>
   <div class="hudbottom">
     <p id="arHint">Kamera wird gestartet …</p>
-    <small>Testmarker: Hiro für M-101, Kanji für M-204</small>
+    <small>Testmarker: Hiro-Marker an der Station Befüllen</small>
     <button class="link" onclick="markerFound(0)">Ohne Kamera testen</button>
   </div>
 </div>
@@ -237,30 +251,105 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
 const $ = id => document.getElementById(id);
 const CHEV = '<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
 
-// Mock-Daten, alles clientseitig
-const machines = [
-  {id:'M-101', name:'CNC-Fräse',       hall:'Halle A', t:62, v:2.8, r:1480, a:12.4},
-  {id:'M-204', name:'Hydraulikpresse', hall:'Halle B', t:68, v:3.2, r:960,  a:18.2},
-  {id:'M-307', name:'Förderband',      hall:'Halle C', t:44, v:1.5, r:320,  a:5.1},
-  {id:'M-412', name:'Kompressor',      hall:'Halle A', t:79, v:4.9, r:2950, a:22.7}
-];
-const hist = [
-  ['29.09. 08:10','M-101',62.4,2.7,'OK'],
-  ['29.09. 07:40','M-412',79.1,4.9,'Warnung'],
-  ['28.09. 16:25','M-204',68.3,3.1,'OK'],
-  ['28.09. 11:05','M-307',44.0,1.4,'OK'],
-  ['27.09. 14:50','M-412',77.6,4.7,'Warnung'],
-  ['27.09. 09:15','M-101',61.9,2.9,'OK'],
-  ['26.09. 13:30','M-204',69.8,3.3,'OK'],
-  ['25.09. 10:00','M-307',45.2,1.6,'OK']
-];
+// Station Befüllen (CPS-i40-Modul). Alle Werte werden clientseitig simuliert.
+// Soll-Konzept: SPS -> OPC UA -> Gateway -> Web-API -> diese Webapp
+const machines = [{id:'Befüllen', name:'Befüllen', sub:'CPS-i40-Modul, SPS mit ET 200SP'}];
+const COLORS = {
+  rot:   {label:'rot',  g:4.0, fall:'BG8',  mag:'BG11', css:'#e03131'},
+  gruen: {label:'grün', g:3.2, fall:'BG9',  mag:'BG12', css:'#2f9e44'},
+  blau:  {label:'blau', g:2.5, fall:'BG10', mag:'BG13', css:'#1c7ed6'}
+};
+const PARTS = ['Gewichtssensor +AN-BW1', 'Lichttaster Palettenposition +AM-BG1/BG2', 'Reedsensoren Stopper +AM-BG3/BG4',
+  'Lichttaster Kugel gefallen +AM-BG8 bis BG10', 'Magazinsensoren (kapazitiv/IR) +AM-BG11 bis BG13',
+  'Reedsensoren Hubzylinder Waage +AN-BG1/BG2', 'RFID-Schreib-/Lesekopf', 'Ventilinsel +AM', 'Sonstiges'];
 const titles = {home:'AR Wartung', list:'Maschine auswählen', machine:'Aktuelle Maschine', history:'Historie', settings:'Einstellungen'};
-let current = null, from = 'home', timer, toastTimer, foundIdx = null, readings = [];
+let current = null, from = 'home', toastTimer, foundIdx = null, readings = [], prevRaw = {};
 
 const clock = d => d.toLocaleTimeString('de-DE');
-function evaluate(t, v){
-  const score = Math.round(Math.min(100, Math.max(0, 100 - Math.max(0,t-55)*1.2 - Math.max(0,v-2)*8)));
-  return {score, ok: score >= 70};
+const g = v => v == null ? '–' : v.toFixed(2).replace('.', ',');
+const noise = () => (Math.random() - .5) * .06;
+const kugelText = o => Object.keys(COLORS).filter(k => o[k]).map(k => `${o[k]} ${COLORS[k].label}`).join(', ');
+
+// ---------- Simulation Befüllzyklus ----------
+const sim = {
+  phase:'leer', t:0, orderNr:1043, order:null, queue:[], done:0, total:0,
+  tara:null, brutto:null, netto:null, weight:0, warn:null, fell:null,
+  mag:{rot:9, gruen:7, blau:3}, emptyTicks:0
+};
+const PHASES = {
+  leer:'Warte auf Palette', einfahren:'Palette fährt ein', rfid:'RFID-Auftrag lesen', tara:'Tara messen',
+  fuellen:'Befüllung läuft', brutto:'Brutto messen', fertig:'Auftrag fertig, RFID schreiben', ausfahren:'Palette fährt aus'
+};
+function newOrder(){
+  const o = {rot:0, gruen:0, blau:0};
+  while (!o.rot && !o.gruen && !o.blau) for (const k in o) o[k] = Math.floor(Math.random() * 3);
+  return o;
+}
+function go(phase){ sim.phase = phase; sim.t = 0; }
+function step(){
+  sim.t++; sim.fell = null;
+  switch (sim.phase){
+    case 'leer':
+      sim.weight = 0;
+      if (Object.values(sim.mag).some(n => n === 0)){       // Magazin leer: Werker füllt nach einiger Zeit nach
+        if (++sim.emptyTicks > 10){ for (const k in sim.mag) if (!sim.mag[k]) sim.mag[k] = 8; sim.emptyTicks = 0; sim.warn = null; }
+        break;
+      }
+      if (sim.t >= 3) go('einfahren');
+      break;
+    case 'einfahren': if (sim.t >= 1) go('rfid'); break;
+    case 'rfid':
+      sim.orderNr++; sim.order = newOrder(); sim.warn = null;
+      sim.queue = Object.entries(sim.order).flatMap(([k, n]) => Array(n).fill(k));
+      sim.total = sim.queue.length; sim.done = 0; sim.tara = sim.brutto = sim.netto = null;
+      go('tara'); break;
+    case 'tara':
+      if (sim.t === 1) sim.weight = 11.6 + Math.random() * .5;   // leere Dose
+      if (sim.t >= 2){ sim.tara = sim.weight; go('fuellen'); }
+      break;
+    case 'fuellen': {
+      const k = sim.queue.shift();
+      if (!k){ go('brutto'); break; }
+      if (!sim.mag[k]){ sim.warn = `Magazin ${COLORS[k].label} leer`; sim.queue = []; go('brutto'); break; }
+      sim.mag[k]--; sim.done++; sim.fell = k;
+      sim.weight += COLORS[k].g + (Math.random() - .5) * .2;
+      break;
+    }
+    case 'brutto':
+      sim.brutto = sim.weight; sim.netto = sim.brutto - sim.tara;
+      go('fertig'); logHistory(); break;
+    case 'fertig': if (sim.t >= 3) go('ausfahren'); break;
+    case 'ausfahren': if (sim.t >= 1){ sim.weight = 0; go('leer'); } break;
+  }
+  const d = {ts:new Date(), ...rawSignals()};
+  readings.push(d); if (readings.length > 600) readings.shift();
+  if ($('machine').classList.contains('active')) render(d);
+  $('homeSync').textContent = clock(d.ts);
+  renderList();
+}
+function rawSignals(){
+  const p = sim.phase, atStation = !['leer', 'ausfahren'].includes(p), up = ['tara', 'fuellen', 'brutto'].includes(p);
+  const sig = {
+    'AN-BW1':  ['gewicht_g', sim.weight ? g(sim.weight + noise()) : '0,00'],
+    'AM-BG1':  ['palette_pos_1', +atStation],
+    'AM-BG2':  ['palette_pos_2', +(atStation && p !== 'einfahren')],
+    'AM-BG3':  ['stopper_oben', +(p !== 'ausfahren')],
+    'AM-BG4':  ['stopper_unten', +(p === 'ausfahren')]
+  };
+  for (const k in COLORS){
+    sig['AM-' + COLORS[k].fall] = ['kugel_fall_' + k, +(sim.fell === k)];
+  }
+  for (const k in COLORS){
+    sig['AM-' + COLORS[k].mag] = ['magazin_' + k, +(sim.mag[k] > 0)];
+  }
+  sig['AN-BG1'] = ['waage_oben', +up];
+  sig['AN-BG2'] = ['waage_unten', +!up];
+  sig['RFID'] = ['auftrag', sim.order && atStation ? 'A-' + sim.orderNr : '–'];
+  return sig;
+}
+function state(){
+  if (sim.warn) return {ok:false, text:'Warnung'};
+  return {ok:true, text: sim.phase === 'leer' ? 'Bereit' : 'Zustand OK'};
 }
 
 // ---------- Navigation ----------
@@ -270,54 +359,85 @@ function show(id){
   $('back').style.visibility = id === 'home' ? 'hidden' : 'visible';
   const tab = ['history','settings'].includes(id) ? id : 'home';
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.s === tab));
-  if (id !== 'machine') clearInterval(timer);
+  if (id === 'history') renderHist();
   document.querySelector('main').scrollTop = 0;
 }
 function goBack(){ show($('machine').classList.contains('active') ? from : 'home'); }
 
 // ---------- Maschinendaten ----------
 function openMachine(i, src){
-  current = machines[i]; from = src; readings = [];
+  current = machines[i]; from = src; prevRaw = {};
   $('mName').textContent = current.name;
-  $('mSub').textContent = `${current.id}, ${current.hall}`;
-  show('machine'); clearInterval(timer); tick(); timer = setInterval(tick, 2000);
+  $('mSub').textContent = current.sub;
+  show('machine'); render({ts:new Date(), ...rawSignals()});
 }
-function tick(){
-  const m = current, n = () => Math.random() - .5;
-  const d = {ts:new Date(), t:m.t+n()*2, v:Math.max(0,m.v+n()*.6), r:Math.round(m.r+n()*40), a:m.a+n()};
-  readings.push(d); if (readings.length > 300) readings.shift();
-
-  $('raw').innerHTML = [['temp_c',d.t.toFixed(1)],['vib_mm_s',d.v.toFixed(2)],['rpm',d.r],['strom_a',d.a.toFixed(1)],['ts',d.ts.getTime()]]
-    .map(([k,v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('');
-
-  const s = evaluate(d.t, d.v), c = `var(--${s.ok?'ok':'warn'})`;
-  $('score').textContent = s.score;
-  $('scoreLab').textContent = s.ok ? 'Zustand OK' : 'Warnung';
+function render(d){
+  const st = state(), c = `var(--${st.ok ? 'ok' : 'warn'})`;
+  const live = sim.tara != null ? (sim.netto != null ? sim.netto : sim.weight - sim.tara) : null;
+  $('score').textContent = live == null ? '–' : g(live);
+  $('scoreLab').textContent = sim.warn || st.text;
   $('scoreLab').style.color = c;
-  $('bar').style.width = s.score + '%';
+  $('bar').style.width = (sim.total ? sim.done / sim.total * 100 : 0) + '%';
   $('bar').style.background = c;
-  $('eTemp').textContent = d.t > 75 ? 'erhöht' : 'normal';
-  $('eVib').textContent = d.v > 4.5 ? 'erhöht' : 'normal';
-  $('eRec').textContent = s.ok ? 'Keine Wartung nötig' : 'Wartung planen';
-  $('sync').textContent = $('homeSync').textContent = clock(d.ts);
+  $('eStep').textContent = PHASES[sim.phase] + (sim.phase === 'fuellen' ? ` (${sim.done} von ${sim.total})` : '');
+  $('eOrder').innerHTML = sim.order ? `A-${sim.orderNr} <small>${kugelText(sim.order)}</small>` : '–';
+  $('eTara').textContent = g(sim.tara) + ' g';
+  $('eBrutto').textContent = g(sim.brutto) + ' g';
+  const soll = sim.order ? Object.keys(COLORS).reduce((a, k) => a + sim.order[k] * COLORS[k].g, 0) : null;
+  $('eNetto').innerHTML = sim.netto == null ? '– g' : `${g(sim.netto)} g <small>Soll ${g(soll)}</small>`;
+  $('eMags').innerHTML = Object.keys(COLORS).map(k =>
+    `<span class="mag${sim.mag[k] ? '' : ' empty'}"><i style="background:${COLORS[k].css}"></i>${sim.mag[k] ? COLORS[k].label : 'leer'}</span>`).join('');
+  $('raw').innerHTML = Object.entries(d).filter(([k]) => k !== 'ts').map(([bmk, [name, v]]) => {
+    const chg = prevRaw[bmk] !== undefined && prevRaw[bmk] !== v && bmk !== 'AN-BW1';
+    prevRaw[bmk] = v;
+    return `<div><span>${bmk === 'RFID' ? 'RFID' : '+' + bmk}</span><span>${name}</span><span class="v${chg ? ' chg' : ''}">${v}</span></div>`;
+  }).join('');
+  $('sync').textContent = clock(d.ts);
 }
 function exportCSV(){
   if (!readings.length) return toast('Noch keine Messwerte');
-  const rows = [['zeit','maschine','temp_c','vib_mm_s','rpm','strom_a'],
-    ...readings.map(d => [d.ts.toISOString(), current.id, d.t.toFixed(1), d.v.toFixed(2), d.r, d.a.toFixed(1)])];
-  const url = URL.createObjectURL(new Blob([rows.map(r => r.join(';')).join('\n')], {type:'text/csv'}));
+  const keys = Object.keys(readings[0]).filter(k => k !== 'ts');
+  const rows = [['zeit', ...keys.map(k => (k === 'RFID' ? '' : '+') + k + ' ' + readings[0][k][0])],
+    ...readings.map(d => [d.ts.toISOString(), ...keys.map(k => d[k][1])])];
+  const url = URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.join(';')).join('\n')], {type:'text/csv'}));
   const a = document.createElement('a');
-  a.href = url; a.download = `${current.id}_sensordaten.csv`;
+  a.href = url; a.download = 'befuellen_sensordaten.csv';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   toast(`${readings.length} Messwerte exportiert`);
 }
 
 // ---------- Historie ----------
+const hist = [];
+function logHistory(){
+  const soll = Object.keys(COLORS).reduce((a, k) => a + sim.order[k] * COLORS[k].g, 0);
+  hist.unshift({ts:new Date(), nr:'A-' + sim.orderNr, o:{...sim.order}, tara:sim.tara, brutto:sim.brutto, netto:sim.netto,
+    ok: !sim.warn && Math.abs(sim.netto - soll) < .6, why: sim.warn});
+  if (hist.length > 50) hist.pop();
+  if ($('history').classList.contains('active')) renderHist();
+}
+function seedHistory(){
+  const now = Date.now();
+  for (let i = 1; i <= 12; i++){
+    const o = newOrder(), tara = 11.6 + Math.random() * .5, short = i === 4 || i === 9;
+    if (short && !o.blau) o.blau = 1;
+    let netto = Object.keys(COLORS).reduce((a, k) => a + o[k] * COLORS[k].g, 0) + (Math.random() - .5) * .3;
+    if (short) netto -= COLORS.blau.g;
+    hist.push({ts:new Date(now - i * 47 * 60000), nr:'A-' + (sim.orderNr - i + 1), o, tara, brutto:tara + netto, netto, ok:!short, why: short ? 'Magazin blau leer' : null});
+  }
+}
 function renderHist(){
-  const f = $('histFilter').value;
-  $('hist').innerHTML = hist.filter(r => !f || r[1] === f).map(r =>
-    `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2].toFixed(1)}</td><td>${r[3].toFixed(1)}</td><td class="${r[4]==='OK'?'ok':'warn'}">${r[4]}</td></tr>`).join('');
+  const f = $('histFilter').value, today = new Date().toDateString(),
+    fmt = d => d.toDateString() === today ? d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})
+      : d.toLocaleString('de-DE', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}).replace(',', '');
+  $('hist').innerHTML = hist.filter(r => !f || !r.ok).map(r =>
+    `<tr><td>${fmt(r.ts)}</td><td>${r.nr}</td><td>${g(r.netto)}</td><td class="${r.ok ? 'ok' : 'warn'}">${r.ok ? 'OK' : (r.why || 'Abweichung')}</td><td>${r.o.rot}/${r.o.gruen}/${r.o.blau}</td><td>${g(r.tara)}</td><td>${g(r.brutto)}</td></tr>`).join('');
+}
+function renderList(){
+  const st = state();
+  $('machineList').innerHTML = machines.map((m, i) =>
+    `<button class="rowbtn" onclick="openMachine(${i},'list')"><span class="t"><strong>${m.name}</strong><small>${m.sub}</small></span><span class="state ${st.ok ? 'ok' : 'warn'}">${sim.warn || st.text}</span>${CHEV}</button>`).join('')
+    + '<p class="note">Weitere CPS-i40-Module sind noch nicht angebunden.</p>';
 }
 
 // ---------- Einstellungen / Report ----------
@@ -328,7 +448,10 @@ function setTheme(t){
   try { localStorage.setItem('ar-theme', t); } catch(e) {}
 }
 function toggleTheme(){ setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
-function reportCurrent(){ show('settings'); $('repMachine').selectedIndex = machines.indexOf(current) + 1; }
+function reportCurrent(){
+  show('settings');
+  if (sim.warn){ $('repMachine').selectedIndex = 5; $('repText').value = sim.warn + ', Auftrag A-' + sim.orderNr; }
+}
 function sendReport(){
   if (!$('repText').value.trim()) return toast('Beschreibe zuerst den Fehler');
   $('repText').value = '';
@@ -350,7 +473,6 @@ const loadAR = () => arLib || (arLib = loadScript(AFRAME_SRC).then(() => loadScr
 const setHint = t => $('arHint').textContent = t;
 
 function startScan(){
-  clearInterval(timer);
   document.body.classList.remove('found');
   document.body.classList.add('scanning');
   setHint('Kamera wird gestartet …');
@@ -364,7 +486,6 @@ function startScan(){
       `<a-scene vr-mode-ui="enabled: false" loading-screen="enabled: false" device-orientation-permission-ui="enabled: false" renderer="logarithmicDepthBuffer: true" embedded
         arjs="sourceType: webcam; facingMode: environment; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; debugUIEnabled: false;">
         <a-marker preset="hiro" data-machine="0"></a-marker>
-        <a-marker preset="kanji" data-machine="1"></a-marker>
         <a-entity camera look-controls="enabled: false"></a-entity>
       </a-scene>`;
     $('arStage').querySelectorAll('a-marker').forEach(m => {
@@ -399,9 +520,9 @@ function stopScan(){
 }
 function markerFound(i){
   foundIdx = i;
-  const m = machines[i], s = evaluate(m.t, m.v);
-  $('fName').textContent = `${m.name} (${m.id})`;
-  $('fState').innerHTML = `<span style="color:${s.ok?'#3ecf7a':'#ff7a45'}">${s.ok?'Zustand OK':'Warnung'}</span>, ${s.score} %, ${m.hall}`;
+  const m = machines[i], st = state();
+  $('fName').textContent = `Station ${m.name}`;
+  $('fState').innerHTML = `<span style="color:${st.ok?'#3ecf7a':'#ff7a45'}">${sim.warn || st.text}</span>, ${PHASES[sim.phase]}`;
   document.body.classList.add('found');
 }
 function markerLost(){ document.body.classList.remove('found'); }
@@ -412,14 +533,11 @@ window.fireEventMarkerFound = (i = 0) => markerFound(i);
 window.fireEventMarkerLost  = () => markerLost();
 
 // ---------- Init ----------
-$('machineList').innerHTML = machines.map((m, i) => {
-  const s = evaluate(m.t, m.v);
-  return `<button class="rowbtn" onclick="openMachine(${i},'list')"><span class="t"><strong>${m.name}</strong><small>${m.id}, ${m.hall}</small></span><span class="state ${s.ok?'ok':'warn'}">${s.ok?'OK':'Warnung'}</span>${CHEV}</button>`;
-}).join('');
-$('histFilter').innerHTML = '<option value="">Alle Maschinen</option>' + machines.map(m => `<option value="${m.id}">${m.id} ${m.name}</option>`).join('');
-$('repMachine').innerHTML = '<option>Maschine auswählen</option>' + machines.map(m => `<option>${m.id} ${m.name}</option>`).join('');
-renderHist();
+$('repMachine').innerHTML = '<option>Bauteil auswählen</option>' + PARTS.map(p => `<option>${p}</option>`).join('');
+seedHistory();
+renderList();
 $('homeSync').textContent = clock(new Date());
+setInterval(step, 1000);
 let savedTheme = null; try { savedTheme = localStorage.getItem('ar-theme'); } catch(e) {}
 setTheme(savedTheme || 'dark');
 show('home');
