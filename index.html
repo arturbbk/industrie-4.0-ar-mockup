@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1f23">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AR Wartung">
+<meta name="format-detection" content="telephone=no">
 <title>Industrie 4.0 AR - Mockup</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,8 +17,11 @@
 :root[data-theme="dark"]{--bg:#141619;--surface:#1c1f23;--text:#e8eaed;--muted:#8d949e;--line:#2b2f35;--ok:#3ecf7a;--warn:#ff7a45}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;background:#23262b;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
 button,select,textarea{font:inherit;color:inherit}
+button,select,a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:active{opacity:.7}
 button{cursor:pointer;background:none;border:0;text-align:left}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -22,7 +31,7 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke
 header{display:flex;align-items:center;gap:2px;height:56px;padding:0 6px;border-bottom:1px solid var(--line);background:var(--surface);flex:none}
 header h1{flex:1;font-size:18px;font-weight:600;letter-spacing:-.01em;padding-left:6px}
 .icon{width:44px;height:44px;display:grid;place-items:center;border-radius:8px}
-main{flex:1;min-height:0;overflow-y:auto}
+main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .screen{display:none;padding:20px 18px 32px}
 .screen.active{display:block}
 
@@ -76,7 +85,8 @@ td.ok{color:var(--ok);font-weight:600}td.warn{color:var(--warn);font-weight:600}
 .seg button{padding:10px;border-radius:6px;font-weight:500;color:var(--muted);text-align:center}
 .seg button.on{background:var(--text);color:var(--bg)}
 label.f{display:block;font-size:14px;color:var(--muted);margin:14px 0 6px}
-select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:15px}
+select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:16px;-webkit-appearance:none;appearance:none}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:36px}
 textarea{height:110px;resize:vertical}
 
 /* Menüleiste */
@@ -85,19 +95,21 @@ nav button{flex:1;padding:15px 0 17px;font-size:14px;font-weight:500;color:var(-
 nav button.on{color:var(--text);font-weight:600}
 nav button.on::before{content:"";position:absolute;top:-1px;left:26%;right:26%;height:3px;background:var(--accent);border-radius:0 0 3px 3px}
 
-.toast{position:absolute;left:50%;bottom:78px;transform:translate(-50%,12px);background:var(--text);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:15px;font-weight:500;white-space:nowrap;opacity:0;pointer-events:none;transition:.2s}
+.toast{position:absolute;left:50%;bottom:calc(78px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:var(--text);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:15px;font-weight:500;white-space:nowrap;opacity:0;pointer-events:none;transition:.2s}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* AR-Scan (A-Frame + AR.js) */
 #arStage{display:none;position:fixed;inset:0;z-index:1}
 #ar{display:none;position:fixed;inset:0;z-index:5;color:#fff;flex-direction:column;pointer-events:none}
 #ar > *{pointer-events:auto}
-body.scanning{background:#000}
+/* AR.js setzt Breite, Höhe und Ränder inline auf <body>; das darf das Layout nie verändern */
+body{width:auto!important;height:100%!important;margin:0!important}
+body.scanning{background:#000;overflow:hidden}
+#arStage,#arStage *{pointer-events:none}
 body.scanning .phone{display:none}
 body.scanning #arStage{display:block}
 body.scanning #ar{display:flex}
-body.scanning video,body.scanning #arStage canvas{width:100vw!important;height:100vh!important;margin:0!important;object-fit:contain!important}
-.hudtop{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 14px;background:linear-gradient(rgba(0,0,0,.65),transparent);font-weight:600}
+.hudtop{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) calc(12px + env(safe-area-inset-right,0px)) 14px calc(12px + env(safe-area-inset-left,0px));background:linear-gradient(rgba(0,0,0,.65),transparent);font-weight:600}
 .hudbtn{color:#fff;font-weight:600;padding:9px 12px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.25)}
 .viewfinder{flex:1;display:grid;place-items:center;pointer-events:none!important}
 .corners{width:230px;height:230px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;transition:opacity .2s}
@@ -114,9 +126,11 @@ body.found #found{display:block}
 body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-@media (max-width:500px){
-  body{display:block}
+@media (max-width:500px),(hover:none) and (pointer:coarse){
+  body{display:block;background:var(--bg)}
   .phone{width:100%;height:100vh;height:100dvh;border:0;border-radius:0}
+  header{padding-left:calc(6px + env(safe-area-inset-left,0px));padding-right:calc(6px + env(safe-area-inset-right,0px))}
+  .screen{padding-left:calc(18px + env(safe-area-inset-left,0px));padding-right:calc(18px + env(safe-area-inset-right,0px))}
   header{height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
   nav{padding-bottom:env(safe-area-inset-bottom,0px)}
 }
@@ -310,6 +324,7 @@ function renderHist(){
 function setTheme(t){
   document.documentElement.dataset.theme = t;
   document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#1c1f23' : '#ffffff';
   try { localStorage.setItem('ar-theme', t); } catch(e) {}
 }
 function toggleTheme(){ setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
@@ -345,13 +360,12 @@ function startScan(){
   }
   loadAR().then(() => {
     if (!document.body.classList.contains('scanning')) return;
-    const ring = '<a-ring radius-inner="0.42" radius-outer="0.5" rotation="-90 0 0" color="#f2c230"></a-ring>';
     $('arStage').innerHTML =
-      `<a-scene vr-mode-ui="enabled: false" loading-screen="enabled: false" renderer="logarithmicDepthBuffer: true" embedded
+      `<a-scene vr-mode-ui="enabled: false" loading-screen="enabled: false" device-orientation-permission-ui="enabled: false" renderer="logarithmicDepthBuffer: true" embedded
         arjs="sourceType: webcam; facingMode: environment; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; debugUIEnabled: false;">
-        <a-marker preset="hiro" data-machine="0">${ring}</a-marker>
-        <a-marker preset="kanji" data-machine="1">${ring}</a-marker>
-        <a-entity camera></a-entity>
+        <a-marker preset="hiro" data-machine="0"></a-marker>
+        <a-marker preset="kanji" data-machine="1"></a-marker>
+        <a-entity camera look-controls="enabled: false"></a-entity>
       </a-scene>`;
     $('arStage').querySelectorAll('a-marker').forEach(m => {
       m.addEventListener('markerFound', () => markerFound(+m.dataset.machine));
@@ -374,6 +388,14 @@ function stopScan(){
     v.remove();
   });
   $('arStage').innerHTML = '';
+  // AR.js schreibt Größe und Ränder direkt auf <body>/<html>; zurücksetzen, sonst zoomt iOS heraus
+  document.body.removeAttribute('style');
+  document.documentElement.removeAttribute('style');
+  document.documentElement.classList.remove('a-fullscreen');
+  const vp = document.querySelector('meta[name=viewport]'), c = vp.content;
+  vp.content = c + ', maximum-scale=1';
+  setTimeout(() => { vp.content = c; }, 300);
+  window.scrollTo(0, 0);
 }
 function markerFound(i){
   foundIdx = i;
