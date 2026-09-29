@@ -1,85 +1,406 @@
-<!doctype html>
-<html lang="de">
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Industrie 4.0 AR Mockup - Testpage</title>
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
-  <style>
-    :root { color-scheme: dark; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AR Wartung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef0f2;--surface:#fff;--text:#15171a;--muted:#5f6670;--line:#d9dde2;--accent:#f2c230;--ink:#15171a;--ok:#1f9d55;--warn:#d9480f}
+:root[data-theme="dark"]{--bg:#141619;--surface:#1c1f23;--text:#e8eaed;--muted:#8d949e;--line:#2b2f35;--ok:#3ecf7a;--warn:#ff7a45}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;background:#23262b;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+button,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;text-align:left}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-    #overlay {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      z-index: 10;
-      min-width: 220px;
-      padding: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.45);
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(2px);
-      font-size: 16px;
-      color: #fff;
-    }
+/* App-Rahmen */
+.phone{width:390px;height:min(844px,calc(100vh - 40px));background:var(--bg);color:var(--text);border:10px solid #000;border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+header{display:flex;align-items:center;gap:2px;height:56px;padding:0 6px;border-bottom:1px solid var(--line);background:var(--surface);flex:none}
+header h1{flex:1;font-size:18px;font-weight:600;letter-spacing:-.01em;padding-left:6px}
+.icon{width:44px;height:44px;display:grid;place-items:center;border-radius:8px}
+main{flex:1;min-height:0;overflow-y:auto}
+.screen{display:none;padding:20px 18px 32px}
+.screen.active{display:block}
 
-    /* Kamera-/Canvas-Darstellung */
-    video, canvas {
-      width: 100vw !important;
-      height: 100vh !important;
-      object-fit: contain !important; /* weniger Zoom-Eindruck */
-    }
-  </style>
+/* Allgemein */
+.status{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin-bottom:20px}
+.status b{font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
+h2{font-size:14px;font-weight:600;color:var(--muted);margin:28px 0 8px}
+.rows{border-top:1px solid var(--line)}
+.rowbtn{display:flex;align-items:center;gap:12px;width:100%;padding:16px 2px;border-bottom:1px solid var(--line)}
+.rowbtn .t{flex:1}
+.rowbtn strong{display:block;font-size:17px;font-weight:600}
+.rowbtn small{display:block;font-size:14px;color:var(--muted);margin-top:2px}
+.rowbtn svg{color:var(--muted);width:18px;height:18px}
+.state{font-size:13px;font-weight:600}
+.state.ok{color:var(--ok)}.state.warn{color:var(--warn)}
+
+/* Start */
+.primary{display:block;width:100%;background:var(--accent);color:var(--ink);border-radius:10px;padding:22px 20px 20px;margin-bottom:24px;position:relative}
+.primary strong{display:block;font-size:25px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.primary span{display:block;font-size:15px;margin-top:8px;max-width:24ch;opacity:.82}
+.primary svg{position:absolute;right:18px;top:20px;width:34px;height:34px;stroke:var(--ink);stroke-width:1.8}
+
+/* Maschine */
+.mtitle{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.msub{color:var(--muted);font-size:15px;margin:4px 0 14px}
+.score{display:flex;align-items:baseline;gap:6px;padding:2px 0 10px}
+.score .num{font-size:44px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.score .pct{font-size:18px;font-weight:600;color:var(--muted)}
+.score .lab{margin-left:auto;font-weight:600}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.bar i{display:block;height:100%;width:0;transition:width .4s}
+.kv{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv span{color:var(--muted)}
+.kv b{font-weight:600}
+.raw{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.8;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-variant-numeric:tabular-nums}
+.raw div{display:flex;justify-content:space-between}
+.raw span:first-child{color:var(--muted)}
+.btn{display:block;width:100%;padding:15px;border-radius:8px;background:var(--accent);color:var(--ink);font-weight:600;font-size:16px;margin-top:24px;text-align:center}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--text);margin-top:10px}
+
+/* Historie */
+.tablewrap{overflow-x:auto;margin:14px -18px 0;padding:0 18px}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th{font-size:13px;font-weight:500;color:var(--muted);text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
+td{padding:12px 10px 12px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+td.ok{color:var(--ok);font-weight:600}td.warn{color:var(--warn);font-weight:600}
+
+/* Einstellungen */
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:8px;padding:3px;background:var(--surface)}
+.seg button{padding:10px;border-radius:6px;font-weight:500;color:var(--muted);text-align:center}
+.seg button.on{background:var(--text);color:var(--bg)}
+label.f{display:block;font-size:14px;color:var(--muted);margin:14px 0 6px}
+select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:15px}
+textarea{height:110px;resize:vertical}
+
+/* Menüleiste */
+nav{display:flex;border-top:1px solid var(--line);background:var(--surface);flex:none}
+nav button{flex:1;padding:15px 0 17px;font-size:14px;font-weight:500;color:var(--muted);position:relative;text-align:center}
+nav button.on{color:var(--text);font-weight:600}
+nav button.on::before{content:"";position:absolute;top:-1px;left:26%;right:26%;height:3px;background:var(--accent);border-radius:0 0 3px 3px}
+
+.toast{position:absolute;left:50%;bottom:78px;transform:translate(-50%,12px);background:var(--text);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:15px;font-weight:500;white-space:nowrap;opacity:0;pointer-events:none;transition:.2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* AR-Scan (A-Frame + AR.js) */
+#arStage{display:none;position:fixed;inset:0;z-index:1}
+#ar{display:none;position:fixed;inset:0;z-index:5;color:#fff;flex-direction:column;pointer-events:none}
+#ar > *{pointer-events:auto}
+body.scanning{background:#000}
+body.scanning .phone{display:none}
+body.scanning #arStage{display:block}
+body.scanning #ar{display:flex}
+body.scanning video,body.scanning #arStage canvas{width:100vw!important;height:100vh!important;margin:0!important;object-fit:contain!important}
+.hudtop{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 14px;background:linear-gradient(rgba(0,0,0,.65),transparent);font-weight:600}
+.hudbtn{color:#fff;font-weight:600;padding:9px 12px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.25)}
+.viewfinder{flex:1;display:grid;place-items:center;pointer-events:none!important}
+.corners{width:230px;height:230px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;transition:opacity .2s}
+.hudbottom{padding:16px 20px calc(22px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(0,0,0,.75));text-align:center}
+.hudbottom p{font-size:15px;line-height:1.4;margin:0 auto 4px;max-width:32ch;text-shadow:0 1px 2px #000}
+.hudbottom small{display:block;font-size:13px;color:#b9bec6;margin-bottom:10px}
+.link{color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:6px;text-align:center}
+#found{display:none;position:fixed;left:16px;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;max-width:420px;margin:0 auto;background:rgba(20,22,25,.86);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);border-left:4px solid var(--accent);border-radius:8px;padding:16px;color:#fff}
+#found .k{font-size:13px;color:#b9bec6}
+#found strong{display:block;font-size:22px;font-weight:700;margin-top:2px}
+#found .s{font-size:14px;margin-top:4px;color:#d7dbe0}
+#found .btn{margin-top:14px}
+body.found #found{display:block}
+body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:500px){
+  body{display:block}
+  .phone{width:100%;height:100vh;height:100dvh;border:0;border-radius:0}
+  header{height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+  nav{padding-bottom:env(safe-area-inset-bottom,0px)}
+}
+</style>
 </head>
 <body>
-  <a-scene
-    vr-mode-ui="enabled: false"
-    renderer="logarithmicDepthBuffer: true"
-    embedded
-    arjs="sourceType: webcam; facingMode: environment; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; debugUIEnabled: false;">
-    <a-marker preset="hiro" id="hiro-marker"></a-marker>
-    <a-entity camera></a-entity>
-  </a-scene>
 
-  <div id="overlay">
-    <div id="marker-count">The Marker was not yet found</div>
+<div class="phone">
+  <header>
+    <button class="icon" id="back" onclick="goBack()" aria-label="Zurück"><svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <h1 id="title">AR Wartung</h1>
+    <button class="icon" onclick="toggleTheme()" aria-label="Hell oder dunkel"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+  </header>
+
+  <main>
+    <!-- Startseite -->
+    <section class="screen active" id="home">
+      <div class="status"><span><i class="dot"></i>Server online</span><span>Synchronisiert <b id="homeSync">–</b></span></div>
+      <button class="primary" onclick="startScan()">
+        <svg class="i" viewBox="0 0 24 24"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M7 12h10"/></svg>
+        <strong>QR-Code scannen</strong>
+        <span>Kamera öffnen und den Marker an der Maschine erfassen</span>
+      </button>
+      <div class="rows">
+        <button class="rowbtn" onclick="show('list')"><span class="t"><strong>Maschine manuell auswählen</strong><small>Zugang ohne QR-Code</small></span><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button class="rowbtn" onclick="show('history')"><span class="t"><strong>Historie anzeigen</strong><small>Alte Sensordaten</small></span><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+    </section>
+
+    <!-- Maschinenliste -->
+    <section class="screen" id="list"><div class="rows" id="machineList"></div></section>
+
+    <!-- Maschinendaten -->
+    <section class="screen" id="machine">
+      <div class="mtitle" id="mName"></div>
+      <div class="msub" id="mSub"></div>
+      <div class="status"><span><i class="dot"></i>Server online</span><span>Synchronisiert <b id="sync">–</b></span></div>
+
+      <h2>Ausgewertete Sensordaten</h2>
+      <div class="score"><span class="num" id="score">–</span><span class="pct">%</span><span class="lab" id="scoreLab"></span></div>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="kv"><span>Temperatur</span><b id="eTemp"></b></div>
+      <div class="kv"><span>Vibration</span><b id="eVib"></b></div>
+      <div class="kv"><span>Empfehlung</span><b id="eRec"></b></div>
+
+      <h2>Rohe Sensordaten</h2>
+      <div class="raw" id="raw"></div>
+
+      <button class="btn" onclick="exportCSV()">Daten exportieren</button>
+      <button class="btn ghost" onclick="reportCurrent()">Fehler melden</button>
+    </section>
+
+    <!-- Historie -->
+    <section class="screen" id="history">
+      <select id="histFilter" onchange="renderHist()" aria-label="Maschine filtern"></select>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Zeitpunkt</th><th>Maschine</th><th>Temp. °C</th><th>Vib. mm/s</th><th>Status</th></tr></thead>
+          <tbody id="hist"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Einstellungen -->
+    <section class="screen" id="settings">
+      <h2 style="margin-top:0">Darstellung</h2>
+      <div class="seg"><button data-t="light" onclick="setTheme('light')">Hell</button><button data-t="dark" onclick="setTheme('dark')">Dunkel</button></div>
+      <h2>Fehler an Ticketsystem melden</h2>
+      <label class="f" for="repMachine">Maschine</label>
+      <select id="repMachine"></select>
+      <label class="f" for="repText">Beschreibung</label>
+      <textarea id="repText" placeholder="Was ist passiert?"></textarea>
+      <button class="btn" onclick="sendReport()">Ticket senden</button>
+    </section>
+  </main>
+
+  <nav>
+    <button data-s="home" onclick="show('home')">Start</button>
+    <button data-s="history" onclick="show('history')">Historie</button>
+    <button data-s="settings" onclick="show('settings')">Einstellungen</button>
+  </nav>
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- AR-Ansicht: A-Frame-Szene wird erst beim Scannen erzeugt -->
+<div id="arStage"></div>
+<div id="ar">
+  <div class="hudtop"><button class="hudbtn" onclick="stopScan()">Abbrechen</button><span>Marker scannen</span></div>
+  <div class="viewfinder"><svg class="corners" viewBox="0 0 100 100"><path d="M2 22V2h20M78 2h20v20M98 78v20H78M22 98H2V78"/></svg></div>
+  <div class="hudbottom">
+    <p id="arHint">Kamera wird gestartet …</p>
+    <small>Testmarker: Hiro für M-101, Kanji für M-204</small>
+    <button class="link" onclick="markerFound(0)">Ohne Kamera testen</button>
   </div>
+</div>
+<div id="found">
+  <div class="k">Marker erkannt</div>
+  <strong id="fName"></strong>
+  <div class="s" id="fState"></div>
+  <button class="btn" onclick="openFound()">Maschinendaten öffnen</button>
+</div>
 
-  <script>
-    const overlay = document.getElementById('overlay');
-    const hiroMarker = document.getElementById('hiro-marker');
-    const markerCount = document.getElementById('marker-count');
-    let markerFoundCount = 0;
+<script>
+const $ = id => document.getElementById(id);
+const CHEV = '<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
 
-    hiroMarker.addEventListener('markerFound', () => {
-      console.debug('Marker found');
-      markerFoundCount += 1;
-      markerCount.textContent = `The Marker was found the ${markerFoundCount} time`;
-      overlay.style.display = 'block';
+// Mock-Daten, alles clientseitig
+const machines = [
+  {id:'M-101', name:'CNC-Fräse',       hall:'Halle A', t:62, v:2.8, r:1480, a:12.4},
+  {id:'M-204', name:'Hydraulikpresse', hall:'Halle B', t:68, v:3.2, r:960,  a:18.2},
+  {id:'M-307', name:'Förderband',      hall:'Halle C', t:44, v:1.5, r:320,  a:5.1},
+  {id:'M-412', name:'Kompressor',      hall:'Halle A', t:79, v:4.9, r:2950, a:22.7}
+];
+const hist = [
+  ['29.09. 08:10','M-101',62.4,2.7,'OK'],
+  ['29.09. 07:40','M-412',79.1,4.9,'Warnung'],
+  ['28.09. 16:25','M-204',68.3,3.1,'OK'],
+  ['28.09. 11:05','M-307',44.0,1.4,'OK'],
+  ['27.09. 14:50','M-412',77.6,4.7,'Warnung'],
+  ['27.09. 09:15','M-101',61.9,2.9,'OK'],
+  ['26.09. 13:30','M-204',69.8,3.3,'OK'],
+  ['25.09. 10:00','M-307',45.2,1.6,'OK']
+];
+const titles = {home:'AR Wartung', list:'Maschine auswählen', machine:'Aktuelle Maschine', history:'Historie', settings:'Einstellungen'};
+let current = null, from = 'home', timer, toastTimer, foundIdx = null, readings = [];
+
+const clock = d => d.toLocaleTimeString('de-DE');
+function evaluate(t, v){
+  const score = Math.round(Math.min(100, Math.max(0, 100 - Math.max(0,t-55)*1.2 - Math.max(0,v-2)*8)));
+  return {score, ok: score >= 70};
+}
+
+// ---------- Navigation ----------
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  $('title').textContent = titles[id];
+  $('back').style.visibility = id === 'home' ? 'hidden' : 'visible';
+  const tab = ['history','settings'].includes(id) ? id : 'home';
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.s === tab));
+  if (id !== 'machine') clearInterval(timer);
+  document.querySelector('main').scrollTop = 0;
+}
+function goBack(){ show($('machine').classList.contains('active') ? from : 'home'); }
+
+// ---------- Maschinendaten ----------
+function openMachine(i, src){
+  current = machines[i]; from = src; readings = [];
+  $('mName').textContent = current.name;
+  $('mSub').textContent = `${current.id}, ${current.hall}`;
+  show('machine'); clearInterval(timer); tick(); timer = setInterval(tick, 2000);
+}
+function tick(){
+  const m = current, n = () => Math.random() - .5;
+  const d = {ts:new Date(), t:m.t+n()*2, v:Math.max(0,m.v+n()*.6), r:Math.round(m.r+n()*40), a:m.a+n()};
+  readings.push(d); if (readings.length > 300) readings.shift();
+
+  $('raw').innerHTML = [['temp_c',d.t.toFixed(1)],['vib_mm_s',d.v.toFixed(2)],['rpm',d.r],['strom_a',d.a.toFixed(1)],['ts',d.ts.getTime()]]
+    .map(([k,v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('');
+
+  const s = evaluate(d.t, d.v), c = `var(--${s.ok?'ok':'warn'})`;
+  $('score').textContent = s.score;
+  $('scoreLab').textContent = s.ok ? 'Zustand OK' : 'Warnung';
+  $('scoreLab').style.color = c;
+  $('bar').style.width = s.score + '%';
+  $('bar').style.background = c;
+  $('eTemp').textContent = d.t > 75 ? 'erhöht' : 'normal';
+  $('eVib').textContent = d.v > 4.5 ? 'erhöht' : 'normal';
+  $('eRec').textContent = s.ok ? 'Keine Wartung nötig' : 'Wartung planen';
+  $('sync').textContent = $('homeSync').textContent = clock(d.ts);
+}
+function exportCSV(){
+  if (!readings.length) return toast('Noch keine Messwerte');
+  const rows = [['zeit','maschine','temp_c','vib_mm_s','rpm','strom_a'],
+    ...readings.map(d => [d.ts.toISOString(), current.id, d.t.toFixed(1), d.v.toFixed(2), d.r, d.a.toFixed(1)])];
+  const url = URL.createObjectURL(new Blob([rows.map(r => r.join(';')).join('\n')], {type:'text/csv'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = `${current.id}_sensordaten.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast(`${readings.length} Messwerte exportiert`);
+}
+
+// ---------- Historie ----------
+function renderHist(){
+  const f = $('histFilter').value;
+  $('hist').innerHTML = hist.filter(r => !f || r[1] === f).map(r =>
+    `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2].toFixed(1)}</td><td>${r[3].toFixed(1)}</td><td class="${r[4]==='OK'?'ok':'warn'}">${r[4]}</td></tr>`).join('');
+}
+
+// ---------- Einstellungen / Report ----------
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  try { localStorage.setItem('ar-theme', t); } catch(e) {}
+}
+function toggleTheme(){ setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
+function reportCurrent(){ show('settings'); $('repMachine').selectedIndex = machines.indexOf(current) + 1; }
+function sendReport(){
+  if (!$('repText').value.trim()) return toast('Beschreibe zuerst den Fehler');
+  $('repText').value = '';
+  toast('Ticket #' + Math.floor(1000 + Math.random()*9000) + ' gesendet');
+}
+function toast(msg){
+  const e = $('toast'); e.textContent = msg; e.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => e.classList.remove('show'), 2200);
+}
+
+// ---------- AR-Scan (A-Frame 1.4 + AR.js 3.4.5, wie im Repo) ----------
+const AFRAME_SRC = 'https://aframe.io/releases/1.4.0/aframe.min.js';
+const ARJS_SRC   = 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js';
+let arLib = null;
+const loadScript = src => new Promise((res, rej) => {
+  const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s);
+});
+const loadAR = () => arLib || (arLib = loadScript(AFRAME_SRC).then(() => loadScript(ARJS_SRC)));
+const setHint = t => $('arHint').textContent = t;
+
+function startScan(){
+  clearInterval(timer);
+  document.body.classList.remove('found');
+  document.body.classList.add('scanning');
+  setHint('Kamera wird gestartet …');
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    setHint('Kamera nicht verfügbar. Öffne die Seite über HTTPS oder localhost.');
+    return;
+  }
+  loadAR().then(() => {
+    if (!document.body.classList.contains('scanning')) return;
+    const ring = '<a-ring radius-inner="0.42" radius-outer="0.5" rotation="-90 0 0" color="#f2c230"></a-ring>';
+    $('arStage').innerHTML =
+      `<a-scene vr-mode-ui="enabled: false" loading-screen="enabled: false" renderer="logarithmicDepthBuffer: true" embedded
+        arjs="sourceType: webcam; facingMode: environment; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; debugUIEnabled: false;">
+        <a-marker preset="hiro" data-machine="0">${ring}</a-marker>
+        <a-marker preset="kanji" data-machine="1">${ring}</a-marker>
+        <a-entity camera></a-entity>
+      </a-scene>`;
+    $('arStage').querySelectorAll('a-marker').forEach(m => {
+      m.addEventListener('markerFound', () => markerFound(+m.dataset.machine));
+      m.addEventListener('markerLost', markerLost);
     });
+    setHint('Richte die Kamera auf den Marker an der Maschine.');
+  }).catch(() => {
+    arLib = null;
+    setHint('AR-Bibliothek konnte nicht geladen werden. Prüfe die Internetverbindung.');
+  });
+}
+window.addEventListener('camera-error', () => setHint('Kein Kamerazugriff. Erlaube die Kamera in den Browser-Einstellungen.'));
 
-    hiroMarker.addEventListener('markerLost', () => {
-      console.debug('Marker lost');
-      overlay.style.display = 'none';
-    });
+function stopScan(){
+  document.body.classList.remove('scanning', 'found');
+  const scene = document.querySelector('a-scene');
+  if (scene){ try { scene.pause(); } catch(e) {} scene.remove(); }
+  document.querySelectorAll('video').forEach(v => {
+    if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+    v.remove();
+  });
+  $('arStage').innerHTML = '';
+}
+function markerFound(i){
+  foundIdx = i;
+  const m = machines[i], s = evaluate(m.t, m.v);
+  $('fName').textContent = `${m.name} (${m.id})`;
+  $('fState').innerHTML = `<span style="color:${s.ok?'#3ecf7a':'#ff7a45'}">${s.ok?'Zustand OK':'Warnung'}</span>, ${s.score} %, ${m.hall}`;
+  document.body.classList.add('found');
+}
+function markerLost(){ document.body.classList.remove('found'); }
+function openFound(){ const i = foundIdx; stopScan(); openMachine(i, 'home'); }
 
-    /* global functions for debugging */
-    window.fireEventMarkerFound = () => {
-      const event = new CustomEvent('markerFound');
-      hiroMarker.dispatchEvent(event);
-    }
+// Debug-Funktionen wie im Repo (Konsole)
+window.fireEventMarkerFound = (i = 0) => markerFound(i);
+window.fireEventMarkerLost  = () => markerLost();
 
-    window.fireEventMarkerLost = () => {
-      const event = new CustomEvent('markerLost');
-      hiroMarker.dispatchEvent(event);
-    }
-  </script>
+// ---------- Init ----------
+$('machineList').innerHTML = machines.map((m, i) => {
+  const s = evaluate(m.t, m.v);
+  return `<button class="rowbtn" onclick="openMachine(${i},'list')"><span class="t"><strong>${m.name}</strong><small>${m.id}, ${m.hall}</small></span><span class="state ${s.ok?'ok':'warn'}">${s.ok?'OK':'Warnung'}</span>${CHEV}</button>`;
+}).join('');
+$('histFilter').innerHTML = '<option value="">Alle Maschinen</option>' + machines.map(m => `<option value="${m.id}">${m.id} ${m.name}</option>`).join('');
+$('repMachine').innerHTML = '<option>Maschine auswählen</option>' + machines.map(m => `<option>${m.id} ${m.name}</option>`).join('');
+renderHist();
+$('homeSync').textContent = clock(new Date());
+let savedTheme = null; try { savedTheme = localStorage.getItem('ar-theme'); } catch(e) {}
+setTheme(savedTheme || 'dark');
+show('home');
+</script>
 </body>
 </html>
