@@ -19,7 +19,7 @@
 html,body{height:100%}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;background:#23262b;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
-button,select,textarea{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 button,select,a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button:active{opacity:.7}
 button{cursor:pointer;background:none;border:0;text-align:left}
@@ -70,6 +70,13 @@ h2{font-size:14px;font-weight:600;color:var(--muted);margin:28px 0 8px}
 .raw{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.8;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-variant-numeric:tabular-nums}
 .raw div{display:flex;justify-content:space-between}
 .raw span:first-child{color:var(--muted)}
+.live-panel{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:16px;margin-bottom:24px}
+.live-panel h2{margin:0 0 10px;color:var(--text)}
+.live-value{display:block;font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.help{font-size:13px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.live-actions{display:flex;gap:10px;margin-top:12px}
+.live-actions .btn{margin:0;flex:1;padding:12px}
+.connection-note{margin-top:10px}
 .btn{display:block;width:100%;padding:15px;border-radius:8px;background:var(--accent);color:var(--ink);font-weight:600;font-size:16px;margin-top:24px;text-align:center}
 .btn.ghost{background:none;border:1px solid var(--line);color:var(--text);margin-top:10px}
 
@@ -85,7 +92,7 @@ td.ok{color:var(--ok);font-weight:600}td.warn{color:var(--warn);font-weight:600}
 .seg button{padding:10px;border-radius:6px;font-weight:500;color:var(--muted);text-align:center}
 .seg button.on{background:var(--text);color:var(--bg)}
 label.f{display:block;font-size:14px;color:var(--muted);margin:14px 0 6px}
-select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:16px;-webkit-appearance:none;appearance:none}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:16px;-webkit-appearance:none;appearance:none}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:36px}
 textarea{height:110px;resize:vertical}
 
@@ -148,7 +155,17 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
   <main>
     <!-- Startseite -->
     <section class="screen active" id="home">
-      <div class="status"><span><i class="dot"></i>Server online</span><span>Synchronisiert <b id="homeSync">–</b></span></div>
+      <div class="status"><span><i class="dot" id="liveDot" style="background:var(--muted)"></i><span id="liveStatus" role="status">Nicht verbunden</span></span><span>Empfangen <b id="homeSync">–</b></span></div>
+      <div class="live-panel">
+        <h2>Live-Vibration · P-101</h2>
+        <p class="help">Milo · PowerHouse · OPC UA</p>
+        <output class="live-value" id="liveValue" aria-label="Zuletzt empfangener Vibrationswert">–</output>
+        <p class="help" id="liveReadingNote">Noch keine Messwerte empfangen.</p>
+        <div class="kv"><span>Datenqualität</span><b id="liveQuality">–</b></div>
+        <div class="kv"><span>Quellzeit</span><b id="liveTimestamp">–</b></div>
+        <button class="btn ghost" onclick="show('settings'); $('wsUrl').focus()">Verbindung einrichten</button>
+      </div>
+      <h2>AR-Demo mit simulierten Maschinendaten</h2>
       <button class="primary" onclick="startScan()">
         <svg class="i" viewBox="0 0 24 24"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M7 12h10"/></svg>
         <strong>QR-Code scannen</strong>
@@ -167,7 +184,7 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
     <section class="screen" id="machine">
       <div class="mtitle" id="mName"></div>
       <div class="msub" id="mSub"></div>
-      <div class="status"><span><i class="dot"></i>Server online</span><span>Synchronisiert <b id="sync">–</b></span></div>
+      <div class="status"><span>Simulierte Demo-Daten</span><span>Aktualisiert <b id="sync">–</b></span></div>
 
       <h2>Ausgewertete Sensordaten</h2>
       <div class="score"><span class="num" id="score">–</span><span class="pct">%</span><span class="lab" id="scoreLab"></span></div>
@@ -185,6 +202,7 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
 
     <!-- Historie -->
     <section class="screen" id="history">
+      <p class="help">Demo-Historie mit Beispieldaten. Die Live-Datenbank wird in einem weiteren Aufgabenschritt angebunden.</p>
       <select id="histFilter" onchange="renderHist()" aria-label="Maschine filtern"></select>
       <div class="tablewrap">
         <table>
@@ -196,14 +214,23 @@ body.found .corners,body.found .hudbottom{opacity:0;pointer-events:none}
 
     <!-- Einstellungen -->
     <section class="screen" id="settings">
-      <h2 style="margin-top:0">Darstellung</h2>
+      <h2 style="margin-top:0">Live-Daten über localhost.run</h2>
+      <label class="f" for="wsUrl">Tunnel-Adresse</label>
+      <input id="wsUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="wss://…/ws/vibration" aria-describedby="wsHelp wsMessage">
+      <p class="help connection-note" id="wsHelp">Füge die HTTPS-Adresse aus localhost.run ein. Die App verwendet automatisch wss:// und den Pfad /ws/vibration. Bei einem neuen Tunnel die Adresse aktualisieren. Die SSH-Verbindung muss geöffnet bleiben.</p>
+      <div class="live-actions">
+        <button class="btn" id="wsConnect" onclick="connectLive()">Verbinden</button>
+        <button class="btn ghost" id="wsDisconnect" onclick="disconnectLive()">Trennen</button>
+      </div>
+      <p class="help connection-note" id="wsMessage" role="status">Trage die Adresse ein und wähle Verbinden.</p>
+      <h2>Darstellung</h2>
       <div class="seg"><button data-t="light" onclick="setTheme('light')">Hell</button><button data-t="dark" onclick="setTheme('dark')">Dunkel</button></div>
       <h2>Fehler an Ticketsystem melden</h2>
       <label class="f" for="repMachine">Maschine</label>
       <select id="repMachine"></select>
       <label class="f" for="repText">Beschreibung</label>
       <textarea id="repText" placeholder="Was ist passiert?"></textarea>
-      <button class="btn" onclick="sendReport()">Ticket senden</button>
+      <button class="btn" onclick="sendReport()">Ticket simulieren</button>
     </section>
   </main>
 
@@ -299,7 +326,7 @@ function tick(){
   $('eTemp').textContent = d.t > 75 ? 'erhöht' : 'normal';
   $('eVib').textContent = d.v > 4.5 ? 'erhöht' : 'normal';
   $('eRec').textContent = s.ok ? 'Keine Wartung nötig' : 'Wartung planen';
-  $('sync').textContent = $('homeSync').textContent = clock(d.ts);
+  $('sync').textContent = clock(d.ts);
 }
 function exportCSV(){
   if (!readings.length) return toast('Noch keine Messwerte');
@@ -332,12 +359,157 @@ function reportCurrent(){ show('settings'); $('repMachine').selectedIndex = mach
 function sendReport(){
   if (!$('repText').value.trim()) return toast('Beschreibe zuerst den Fehler');
   $('repText').value = '';
-  toast('Ticket #' + Math.floor(1000 + Math.random()*9000) + ' gesendet');
+  toast('Demo-Ticket erstellt (nicht gesendet)');
 }
 function toast(msg){
   const e = $('toast'); e.textContent = msg; e.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => e.classList.remove('show'), 2200);
 }
+
+// ---------- Live-Daten via WebSocket ----------
+// Beispiel einer Nachricht aus node-red-contrib-opcua:
+// {value:{dataType:'Double',arrayType:'Scalar',value:8.3},
+//  statusCode:{value:0},sourceTimestamp:'2026-10-13T11:43:45.823Z'}
+const LIVE_STORAGE = 'ar-live-websocket';
+let liveSocket = null, liveRetry = null, liveGeneration = 0;
+let liveWanted = false, liveAttempt = 0, liveAddress = '', liveReceivedAt = null;
+
+function setLiveStatus(text, kind = 'muted'){
+  $('liveStatus').textContent = text;
+  $('liveDot').style.background = `var(--${kind})`;
+}
+function saveLiveSettings(enabled){
+  try { localStorage.setItem(LIVE_STORAGE, JSON.stringify({url:liveAddress, enabled})); } catch(e) {}
+}
+function stopLiveSocket(){
+  liveGeneration++;
+  clearTimeout(liveRetry); liveRetry = null;
+  const old = liveSocket; liveSocket = null;
+  if (old) old.close();
+}
+function validateLiveAddress(value){
+  let url;
+  try { url = new URL(value.trim()); } catch(e) {
+    throw new Error('Gib eine vollständige ws://- oder wss://-Adresse ein.');
+  }
+  if (url.protocol === 'https:') url.protocol = 'wss:';
+  if (url.protocol === 'http:') url.protocol = 'ws:';
+  if (!['ws:', 'wss:'].includes(url.protocol) || url.username || url.password || url.hash){
+    throw new Error('Verwende eine HTTPS- oder WebSocket-Adresse ohne Zugangsdaten oder # im Link.');
+  }
+  if (url.pathname === '/') url.pathname = '/ws/vibration';
+  if (location.protocol === 'https:' && url.protocol !== 'wss:'){
+    throw new Error('Diese HTTPS-Seite benötigt wss://. Trage die verschlüsselte WebSocket-Adresse deines Tunnels ein.');
+  }
+  return url.href;
+}
+function parseLiveReading(text){
+  const decoded = JSON.parse(text);
+  const data = decoded && typeof decoded === 'object' && 'payload' in decoded ? decoded.payload : decoded;
+  if (!data || typeof data !== 'object') throw new Error('Die Nachricht enthält keinen OPC-UA-Messwert.');
+  const value = data.value && typeof data.value === 'object' ? data.value.value : data.value;
+  if (typeof value !== 'number' || !Number.isFinite(value)){
+    throw new Error('Die Nachricht enthält keinen numerischen Vibrationswert.');
+  }
+  const code = data.statusCode && typeof data.statusCode === 'object' ? data.statusCode.value : data.statusCode;
+  const knownQuality = Number.isInteger(code) && code >= 0 && code <= 0xffffffff;
+  const quality = !knownQuality ? 'Unbekannt' : code >= 0x80000000 ? 'Bad' : code >= 0x40000000 ? 'Uncertain' : 'Good';
+  const timestamp = data.sourceTimestamp || data.timestamp;
+  const sourceTime = typeof timestamp === 'string' && Number.isFinite(Date.parse(timestamp)) ? new Date(timestamp) : null;
+  return {value, quality, sourceTime};
+}
+function receiveLiveReading(text){
+  const reading = parseLiveReading(text);
+  liveReceivedAt = new Date();
+  $('liveValue').textContent = reading.value.toLocaleString('de-DE', {maximumFractionDigits:6});
+  $('liveQuality').textContent = reading.quality;
+  $('liveTimestamp').textContent = reading.sourceTime ? clock(reading.sourceTime) : 'Nicht angegeben';
+  $('liveTimestamp').title = reading.sourceTime ? reading.sourceTime.toISOString() : '';
+  $('homeSync').textContent = clock(liveReceivedAt);
+  $('liveReadingNote').textContent = reading.quality === 'Bad' ? 'Messwert mit fehlerhaftem OPC-UA-Status.' :
+    reading.quality === 'Uncertain' ? 'Messwert mit unsicherem OPC-UA-Status.' : 'Zuletzt empfangener Messwert. Einheit nicht angegeben.';
+  setLiveStatus(reading.quality === 'Good' ? 'Live-Daten empfangen' : `Datenqualität: ${reading.quality}`, reading.quality === 'Good' ? 'ok' : 'warn');
+  $('wsMessage').textContent = 'Verbunden. Der letzte Messwert steht auf der Startseite.';
+}
+function openLiveSocket(){
+  if (!liveWanted) return;
+  const generation = ++liveGeneration;
+  setLiveStatus('Verbindung wird aufgebaut …');
+  $('wsMessage').textContent = 'Verbindung wird aufgebaut …';
+  let socket;
+  try { socket = new WebSocket(liveAddress); }
+  catch(e){
+    liveWanted = false;
+    setLiveStatus('Verbindung fehlgeschlagen', 'warn');
+    $('wsMessage').textContent = 'Verbindung konnte nicht geöffnet werden. Prüfe die Adresse und den Zugriff auf den Pi.';
+    return;
+  }
+  liveSocket = socket;
+  const isCurrent = () => generation === liveGeneration && liveWanted;
+  socket.onopen = () => {
+    if (!isCurrent()) return;
+    setLiveStatus('Verbunden · warte auf Daten', 'ok');
+    $('wsMessage').textContent = 'Verbunden. Warte auf Vibrationsdaten aus Node-RED.';
+  };
+  socket.onmessage = event => {
+    if (!isCurrent()) return;
+    try { receiveLiveReading(event.data); liveAttempt = 0; }
+    catch(e){
+      setLiveStatus('Nachricht nicht lesbar', 'warn');
+      $('wsMessage').textContent = 'Nachricht nicht lesbar. Erwartet wird der OPC-UA-Messwert als JSON mit value.value.';
+      $('liveReadingNote').textContent = liveReceivedAt ? 'Anzeige des vorherigen Messwerts; letzte Nachricht war ungültig.' : 'Noch kein lesbarer Messwert empfangen.';
+    }
+  };
+  socket.onerror = () => {
+    if (!isCurrent()) return;
+    setLiveStatus('Verbindungsfehler', 'warn');
+    $('wsMessage').textContent = 'Verbindung fehlgeschlagen. Prüfe Adresse, Node-RED und gegebenenfalls den Tunnel.';
+  };
+  socket.onclose = () => {
+    if (!isCurrent()) return;
+    liveSocket = null;
+    const delay = Math.min(15000, 1000 * Math.pow(2, Math.min(liveAttempt++, 4)));
+    setLiveStatus('Verbindung unterbrochen', 'warn');
+    $('liveReadingNote').textContent = liveReceivedAt ? 'Letzter empfangener Wert; Verbindung unterbrochen.' : 'Noch keine Messwerte empfangen.';
+    $('wsMessage').textContent = `Verbindung getrennt. Neuer Versuch in ${delay / 1000} Sekunden. Prüfe bei Bedarf Adresse und Tunnel.`;
+    liveRetry = setTimeout(openLiveSocket, delay);
+  };
+}
+function connectLive(){
+  let address;
+  try { address = validateLiveAddress($('wsUrl').value); }
+  catch(e){ $('wsMessage').textContent = e.message; $('wsUrl').focus(); return; }
+  stopLiveSocket();
+  liveAddress = address; liveWanted = true; liveAttempt = 0;
+  $('wsUrl').value = address;
+  liveReceivedAt = null;
+  $('liveValue').textContent = $('liveQuality').textContent = $('liveTimestamp').textContent = $('homeSync').textContent = '–';
+  $('liveTimestamp').title = '';
+  $('liveReadingNote').textContent = 'Noch keine Messwerte empfangen.';
+  saveLiveSettings(true); openLiveSocket();
+}
+function disconnectLive(){
+  liveWanted = false; stopLiveSocket(); saveLiveSettings(false);
+  setLiveStatus('Nicht verbunden');
+  $('wsMessage').textContent = 'Verbindung manuell getrennt. Mit Verbinden erneut starten.';
+  $('liveReadingNote').textContent = liveReceivedAt ? 'Letzter empfangener Wert; Verbindung getrennt.' : 'Noch keine Messwerte empfangen.';
+}
+function initLive(){
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(LIVE_STORAGE)); } catch(e) {}
+  const savedUrl = saved && typeof saved.url === 'string' ? saved.url : '';
+  $('wsUrl').value = savedUrl;
+  if (savedUrl && saved.enabled === true) connectLive();
+}
+$('wsUrl').addEventListener('keydown', event => { if (event.key === 'Enter') connectLive(); });
+setInterval(() => {
+    if (liveSocket && liveSocket.readyState === WebSocket.OPEN && liveReceivedAt && Date.now() - liveReceivedAt.getTime() > 15000){
+      setLiveStatus('Verbunden · keine neuen Daten', 'warn');
+      $('liveReadingNote').textContent = 'Seit mindestens 15 Sekunden kein neuer Messwert. Angezeigt wird der letzte Empfang.';
+    }
+}, 1000);
+window.addEventListener('pagehide', () => { liveWanted = false; stopLiveSocket(); });
+window.addEventListener('pageshow', event => { if (event.persisted) initLive(); });
 
 // ---------- AR-Scan (A-Frame 1.4 + AR.js 3.4.5, wie im Repo) ----------
 const AFRAME_SRC = 'https://aframe.io/releases/1.4.0/aframe.min.js';
@@ -419,10 +591,11 @@ $('machineList').innerHTML = machines.map((m, i) => {
 $('histFilter').innerHTML = '<option value="">Alle Maschinen</option>' + machines.map(m => `<option value="${m.id}">${m.id} ${m.name}</option>`).join('');
 $('repMachine').innerHTML = '<option>Maschine auswählen</option>' + machines.map(m => `<option>${m.id} ${m.name}</option>`).join('');
 renderHist();
-$('homeSync').textContent = clock(new Date());
 let savedTheme = null; try { savedTheme = localStorage.getItem('ar-theme'); } catch(e) {}
 setTheme(savedTheme || 'dark');
 show('home');
+initLive();
 </script>
 </body>
 </html>
+
